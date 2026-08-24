@@ -1,45 +1,73 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Snake Battle</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Snake Battle</title>
 
-  <style>
-    * {
-      box-sizing: border-box;
-    }
+<style>
+* {
+  box-sizing: border-box;
+}
 
-    body {
-      margin: 0;
-      overflow: hidden;
-      background: #111;
-      font-family: Arial, sans-serif;
-      touch-action: none;
-    }
+body {
+  margin: 0;
+  overflow: hidden;
+  background: #102416;
+  font-family: Arial, sans-serif;
+  touch-action: none;
+}
 
-    canvas {
-      display: block;
-      background: #183b25;
-    }
+canvas {
+  display: block;
+}
 
-    #score {
-      position: fixed;
-      top: 15px;
-      left: 15px;
-      color: white;
-      font-size: 20px;
-      font-weight: bold;
-      z-index: 10;
-    }
-  </style>
+#score {
+  position: fixed;
+  top: 15px;
+  left: 15px;
+  color: white;
+  font-size: 20px;
+  font-weight: bold;
+  z-index: 10;
+}
+
+#gameover {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.75);
+  color: white;
+  text-align: center;
+  padding-top: 35vh;
+  z-index: 20;
+}
+
+#gameover h1 {
+  font-size: 40px;
+}
+
+#restart {
+  padding: 12px 25px;
+  font-size: 18px;
+  border: 0;
+  border-radius: 10px;
+}
+</style>
 </head>
 
 <body>
 
 <div id="score">Coins: 0</div>
+
+<div id="gameover">
+  <h1>GAME OVER</h1>
+  <button id="restart">RESTART</button>
+</div>
+
 <canvas id="game"></canvas>
 
 <script>
+
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
@@ -51,131 +79,256 @@ function resize() {
 resize();
 window.addEventListener("resize", resize);
 
-let snake = [
-  { x: 200, y: 200 },
-  { x: 180, y: 200 },
-  { x: 160, y: 200 }
-];
 
-let direction = { x: 1, y: 0 };
-let coin = {
-  x: Math.random() * (canvas.width - 40) + 20,
-  y: Math.random() * (canvas.height - 40) + 20
-};
+// ========================
+// PLAYER
+// ========================
 
-let coins = 0;
+let snake;
+let direction;
+let coins;
 
-function drawSnake() {
-  snake.forEach((part, index) => {
-    ctx.beginPath();
-    ctx.arc(part.x, part.y, 14, 0, Math.PI * 2);
 
-    if (index === 0) {
-      ctx.fillStyle = "#00ff66";
-    } else {
-      ctx.fillStyle = "#00cc55";
+// ========================
+// ENEMY SNAKES
+// ========================
+
+let enemies = [];
+
+function createEnemy(x, y, dx, dy) {
+
+  let body = [];
+
+  for (let i = 0; i < 8; i++) {
+    body.push({
+      x: x - i * dx * 20,
+      y: y - i * dy * 20
+    });
+  }
+
+  return {
+    body: body,
+    direction: {
+      x: dx,
+      y: dy
     }
+  };
+}
+
+
+// ========================
+// COIN
+// ========================
+
+let coin;
+
+function createCoin() {
+
+  coin = {
+    x: Math.random() * (canvas.width - 60) + 30,
+    y: Math.random() * (canvas.height - 60) + 30
+  };
+
+}
+
+
+// ========================
+// START GAME
+// ========================
+
+function startGame() {
+
+  snake = [
+    {x: canvas.width / 2, y: canvas.height / 2},
+    {x: canvas.width / 2 - 20, y: canvas.height / 2},
+    {x: canvas.width / 2 - 40, y: canvas.height / 2}
+  ];
+
+  direction = {
+    x: 1,
+    y: 0
+  };
+
+  coins = 0;
+
+  document.getElementById("score").innerText =
+    "Coins: 0";
+
+  document.getElementById("gameover").style.display =
+    "none";
+
+  enemies = [];
+
+  enemies.push(
+    createEnemy(100, 100, 1, 0)
+  );
+
+  enemies.push(
+    createEnemy(canvas.width - 100, 150, 0, 1)
+  );
+
+  enemies.push(
+    createEnemy(canvas.width - 150, canvas.height - 100, -1, 0)
+  );
+
+  createCoin();
+}
+
+
+// ========================
+// DRAW PLAYER
+// ========================
+
+function drawPlayer() {
+
+  snake.forEach((part, index) => {
+
+    ctx.beginPath();
+
+    ctx.arc(
+      part.x,
+      part.y,
+      14,
+      0,
+      Math.PI * 2
+    );
+
+    ctx.fillStyle =
+      index === 0
+      ? "#00ff66"
+      : "#00bb55";
 
     ctx.fill();
+
   });
+
 }
+
+
+// ========================
+// DRAW ENEMIES
+// ========================
+
+function drawEnemies() {
+
+  enemies.forEach(enemy => {
+
+    enemy.body.forEach((part, index) => {
+
+      ctx.beginPath();
+
+      ctx.arc(
+        part.x,
+        part.y,
+        14,
+        0,
+        Math.PI * 2
+      );
+
+      ctx.fillStyle =
+        index === 0
+        ? "#ff3333"
+        : "#cc2222";
+
+      ctx.fill();
+
+    });
+
+  });
+
+}
+
+
+// ========================
+// DRAW COIN
+// ========================
 
 function drawCoin() {
+
   ctx.beginPath();
-  ctx.arc(coin.x, coin.y, 8, 0, Math.PI * 2);
+
+  ctx.arc(
+    coin.x,
+    coin.y,
+    9,
+    0,
+    Math.PI * 2
+  );
+
   ctx.fillStyle = "#ffd700";
   ctx.fill();
+
 }
 
-function moveSnake() {
+
+// ========================
+// MOVE PLAYER
+// ========================
+
+function movePlayer() {
 
   let head = {
     x: snake[0].x + direction.x * 4,
     y: snake[0].y + direction.y * 4
   };
 
-  // Screen wrap
-  if (head.x < 0) head.x = canvas.width;
-  if (head.x > canvas.width) head.x = 0;
-  if (head.y < 0) head.y = canvas.height;
-  if (head.y > canvas.height) head.y = 0;
+
+  // screen wrap
+
+  if (head.x < 0)
+    head.x = canvas.width;
+
+  if (head.x > canvas.width)
+    head.x = 0;
+
+  if (head.y < 0)
+    head.y = canvas.height;
+
+  if (head.y > canvas.height)
+    head.y = 0;
+
 
   snake.unshift(head);
 
-  let distance = Math.hypot(
-    head.x - coin.x,
-    head.y - coin.y
-  );
 
-  if (distance < 22) {
+  let distance =
+    Math.hypot(
+      head.x - coin.x,
+      head.y - coin.y
+    );
+
+
+  // collect coin
+
+  if (distance < 24) {
 
     coins++;
 
     document.getElementById("score").innerText =
       "Coins: " + coins;
 
-    coin = {
-      x: Math.random() * (canvas.width - 40) + 20,
-      y: Math.random() * (canvas.height - 40) + 20
-    };
+    createCoin();
 
   } else {
+
     snake.pop();
-  }
-}
-
-function gameLoop() {
-
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  drawCoin();
-  moveSnake();
-  drawSnake();
-
-  requestAnimationFrame(gameLoop);
-}
-
-// Touch control
-let startX = 0;
-let startY = 0;
-
-canvas.addEventListener("touchstart", function(e) {
-
-  startX = e.touches[0].clientX;
-  startY = e.touches[0].clientY;
-
-});
-
-canvas.addEventListener("touchend", function(e) {
-
-  let endX = e.changedTouches[0].clientX;
-  let endY = e.changedTouches[0].clientY;
-
-  let dx = endX - startX;
-  let dy = endY - startY;
-
-  if (Math.abs(dx) > Math.abs(dy)) {
-
-    if (dx > 0) {
-      direction = { x: 1, y: 0 };
-    } else {
-      direction = { x: -1, y: 0 };
-    }
-
-  } else {
-
-    if (dy > 0) {
-      direction = { x: 0, y: 1 };
-    } else {
-      direction = { x: 0, y: -1 };
-    }
 
   }
 
-});
+}
 
-gameLoop();
-</script>
 
-</body>
-</html>
+// ========================
+// MOVE ENEMIES
+// ========================
+
+function moveEnemies() {
+
+  enemies.forEach(enemy => {
+
+    let head = {
+      x: enemy.body[0].x +
+         enemy.direction.x * 2,
+      y: enemy.body[0].y +
+         enemy.direction.y * 2
+    };
